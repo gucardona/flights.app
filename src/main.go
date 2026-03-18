@@ -58,7 +58,14 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	log.Printf("search: %d jobs | origin=%s destinations=%v mode=%s",
 		len(jobs), req.Origin, req.Destinations, req.Mode)
 
-	svc := search.NewService(req.APIKey)
+	apiKey := os.Getenv("SERPAPI_KEY")
+	if apiKey == "" {
+		errorMsg := "SERPAPI_KEY environment variable is not set"
+		log.Println("error:", errorMsg)
+		jsonError(w, errorMsg, http.StatusInternalServerError)
+		return
+	}
+	svc := search.NewService(apiKey)
 	results := svc.Run(jobs)
 
 	log.Printf("search done: %d/%d successful", results.Successful, results.TotalJobs)
@@ -70,14 +77,14 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 // handleRegions returns the built-in region→airports mapping.
 func handleRegions(w http.ResponseWriter, r *http.Request) {
 	regions := map[string][]string{
-		"Europe":         {"CDG", "LHR", "FCO", "MAD", "AMS", "FRA", "BCN", "LIS", "ATH"},
-		"Balkans":        {"DBV", "SPU", "ZAG", "BEG", "SKP", "TGD", "TIA", "SOF"},
-		"SE Asia":        {"BKK", "SIN", "KUL", "HAN", "SGN", "DPS"},
-		"North America":  {"JFK", "MIA", "ORD", "LAX", "YYZ"},
+		"Europe":          {"CDG", "LHR", "FCO", "MAD", "AMS", "FRA", "BCN", "LIS", "ATH"},
+		"Balkans":         {"DBV", "SPU", "ZAG", "BEG", "SKP", "TGD", "TIA", "SOF"},
+		"SE Asia":         {"BKK", "SIN", "KUL", "HAN", "SGN", "DPS"},
+		"North America":   {"JFK", "MIA", "ORD", "LAX", "YYZ"},
 		"Central America": {"CUN", "LIR", "PTY", "SJO"},
-		"Africa":         {"CPT", "JNB", "NBO", "CMN"},
-		"Middle East":    {"DXB", "DOH", "AUH", "IST"},
-		"Japan & Korea":  {"NRT", "HND", "KIX", "ICN"},
+		"Africa":          {"CPT", "JNB", "NBO", "CMN"},
+		"Middle East":     {"DXB", "DOH", "AUH", "IST"},
+		"Japan & Korea":   {"NRT", "HND", "KIX", "ICN"},
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(regions)

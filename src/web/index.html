@@ -4,28 +4,18 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>FlightRadar</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg: #f5f5f4;
-    --surface: #ffffff;
-    --border: #e2e2e0;
-    --border-strong: #c8c8c5;
-    --text: #1a1a18;
-    --muted: #6b6b68;
-    --hint: #9b9b98;
-    --accent: #1a1a18;
-    --accent-fg: #ffffff;
-    --green-bg: #f0fdf4;
-    --green-border: #86efac;
-    --green-text: #15803d;
-    --amber-bg: #fffbeb;
-    --amber-text: #92400e;
-    --red-bg: #fef2f2;
-    --red-text: #991b1b;
-    --radius: 8px;
-    --radius-lg: 12px;
+    --bg: #f5f5f4; --surface: #ffffff; --border: #e2e2e0; --border-strong: #c8c8c5;
+    --text: #1a1a18; --muted: #6b6b68; --hint: #9b9b98; --accent: #1a1a18;
+    --accent-fg: #ffffff; --green-bg: #f0fdf4; --green-border: #86efac; --green-text: #15803d;
+    --amber-bg: #fffbeb; --amber-text: #92400e; --red-bg: #fef2f2; --red-text: #991b1b;
+    --radius: 8px; --radius-lg: 12px;
     font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace;
   }
 
@@ -34,156 +24,82 @@
 
   header { margin-bottom: 2rem; }
   header h1 { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.3px; }
-  header p { font-size: .8rem; color: var(--muted); margin-top: 2px; }
+  header p  { font-size: .8rem; color: var(--muted); margin-top: 2px; }
 
-  .panel {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem;
-  }
-  .panel-title {
-    font-size: .7rem; font-weight: 600; text-transform: uppercase;
-    letter-spacing: .8px; color: var(--muted); margin-bottom: .85rem;
-  }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
+  .panel-title { font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: .85rem; }
 
   label { font-size: .75rem; color: var(--muted); display: block; margin-bottom: 4px; }
-  input, select {
-    width: 100%; padding: 7px 10px; font-size: .82rem; font-family: inherit;
-    border: 1px solid var(--border); border-radius: var(--radius);
-    background: var(--bg); color: var(--text); outline: none; transition: border-color .15s;
-  }
+  input, select { width: 100%; padding: 7px 10px; font-size: .82rem; font-family: inherit; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); outline: none; transition: border-color .15s; }
   input:focus, select:focus { border-color: var(--border-strong); }
 
   .grid { display: grid; gap: .75rem; }
   .g2 { grid-template-columns: 1fr 1fr; }
   .g3 { grid-template-columns: 1fr 1fr 1fr; }
-  .g4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
   .field { display: flex; flex-direction: column; }
   .hint { font-size: .68rem; color: var(--hint); margin-top: 3px; }
 
-  /* ── Autocomplete ── */
+  /* Autocomplete */
   .ac-wrap { position: relative; }
-  .ac-dropdown {
-    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
-    background: var(--surface); border: 1px solid var(--border-strong);
-    border-radius: var(--radius); z-index: 200;
-    max-height: 220px; overflow-y: auto;
-    box-shadow: 0 4px 16px rgba(0,0,0,.1);
-    display: none;
-  }
+  .ac-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius); z-index: 200; max-height: 220px; overflow-y: auto; box-shadow: 0 4px 16px rgba(0,0,0,.1); display: none; }
   .ac-dropdown.open { display: block; }
-  .ac-item {
-    padding: 7px 10px; font-size: .78rem; cursor: pointer;
-    display: flex; align-items: center; gap: 10px;
-    border-bottom: 1px solid var(--border); transition: background .1s;
-  }
+  .ac-item { padding: 7px 10px; font-size: .78rem; cursor: pointer; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); transition: background .1s; }
   .ac-item:last-child { border-bottom: none; }
   .ac-item:hover, .ac-item.focused { background: var(--bg); }
-  .ac-iata {
-    font-weight: 700; font-size: .82rem; min-width: 36px;
-    color: var(--accent);
-  }
+  .ac-iata { font-weight: 700; font-size: .82rem; min-width: 36px; color: var(--accent); }
   .ac-name { color: var(--text); flex: 1; }
   .ac-country { font-size: .68rem; color: var(--hint); }
-  .ac-section {
-    padding: 5px 10px; font-size: .65rem; font-weight: 600;
-    text-transform: uppercase; letter-spacing: .6px;
-    color: var(--hint); background: var(--bg);
-    border-bottom: 1px solid var(--border); pointer-events: none;
-  }
+  .ac-section { padding: 5px 10px; font-size: .65rem; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; color: var(--hint); background: var(--bg); border-bottom: 1px solid var(--border); pointer-events: none; }
 
-  /* mode tabs */
+  /* Tabs & Chips */
   .tabs { display: flex; gap: 4px; margin-bottom: 1rem; }
-  .tab {
-    padding: 5px 14px; font-size: .75rem; font-weight: 500;
-    border: 1px solid var(--border); border-radius: 20px; cursor: pointer;
-    background: transparent; color: var(--muted); font-family: inherit; transition: all .12s;
-  }
+  .tab { padding: 5px 14px; font-size: .75rem; font-weight: 500; border: 1px solid var(--border); border-radius: 20px; cursor: pointer; background: transparent; color: var(--muted); font-family: inherit; transition: all .12s; }
   .tab.active { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
-
   .chips { display: flex; flex-wrap: wrap; gap: 5px; }
-  .chip {
-    padding: 3px 11px; font-size: .72rem; font-family: inherit;
-    border: 1px solid var(--border); border-radius: 20px;
-    cursor: pointer; background: transparent; color: var(--muted); transition: all .12s;
-  }
+  .chip { padding: 3px 11px; font-size: .72rem; font-family: inherit; border: 1px solid var(--border); border-radius: 20px; cursor: pointer; background: transparent; color: var(--muted); transition: all .12s; }
   .chip.sel { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 
-  .region-tags { display: flex; flex-wrap: wrap; gap: 5px; }
-  .region-tag {
-    padding: 3px 11px; font-size: .72rem; font-family: inherit;
-    border: 1px solid var(--border); border-radius: var(--radius);
-    cursor: pointer; background: transparent; color: var(--muted); transition: all .12s;
-  }
-  .region-tag.sel { background: var(--green-bg); color: var(--green-text); border-color: var(--green-border); }
-
-  .selected-airports { font-size: .7rem; color: var(--hint); margin-top: 6px; word-break: break-all; line-height: 1.6; }
-
-  .divider {
-    font-size: .68rem; color: var(--hint); text-align: center;
-    margin: .75rem 0; display: flex; align-items: center; gap: 8px;
-  }
+  .divider { font-size: .68rem; color: var(--hint); text-align: center; margin: 1rem 0; display: flex; align-items: center; gap: 8px; }
   .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-  .btn-search {
-    width: 100%; padding: 10px; font-size: .85rem; font-weight: 600;
-    font-family: inherit; background: var(--accent); color: var(--accent-fg);
-    border: none; border-radius: var(--radius); cursor: pointer;
-    margin-top: .75rem; transition: opacity .15s; letter-spacing: .2px;
-  }
-  .btn-search:hover { opacity: .85; }
+  .btn-search { width: 100%; padding: 10px; font-size: .85rem; font-weight: 600; font-family: inherit; background: var(--accent); color: var(--accent-fg); border: none; border-radius: var(--radius); cursor: pointer; margin-top: .75rem; transition: opacity .15s; letter-spacing: .2px; }
+  .btn-search:hover:not(:disabled) { opacity: .85; }
   .btn-search:disabled { opacity: .4; cursor: not-allowed; }
 
-  .results-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: .75rem; font-size: .75rem; color: var(--muted); }
+  /* Map */
+  #map { height: 350px; width: 100%; border-radius: var(--radius); z-index: 1; border: 1px solid var(--border); margin-top: 10px; }
+  #map path { cursor: pointer; }
+  .map-badge { display: inline-block; background: var(--accent); color: var(--accent-fg); padding: 4px 10px; border-radius: 12px; margin-right: 5px; margin-top: 5px; font-size: 0.75rem; }
 
-  .flight {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-lg); padding: 1rem 1.25rem;
-    margin-bottom: .5rem; transition: border-color .15s;
-  }
-  .flight:hover { border-color: var(--border-strong); }
-  .flight.best { border-color: var(--green-border); background: var(--green-bg); }
-  .flight-row { display: flex; justify-content: space-between; align-items: center; }
-  .flight-route { display: flex; align-items: center; gap: 12px; }
-  .iata { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.5px; }
-  .arrow { color: var(--muted); font-size: .9rem; }
-  .meta { font-size: .7rem; color: var(--muted); margin-top: 1px; }
-  .price-block { text-align: right; }
-  .price { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.5px; }
-  .price-meta { font-size: .68rem; color: var(--muted); margin-top: 2px; }
-  .flight-footer {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-top: .75rem; padding-top: .75rem;
-    border-top: 1px solid var(--border); font-size: .72rem; color: var(--muted);
-  }
-  .badge { display: inline-block; font-size: .65rem; padding: 2px 8px; border-radius: 4px; font-weight: 500; margin-bottom: 4px; }
-  .badge-best { background: var(--green-bg); color: var(--green-text); border: 1px solid var(--green-border); }
-  .badge-nonstop { background: var(--green-bg); color: var(--green-text); }
-  .badge-stop { background: var(--amber-bg); color: var(--amber-text); }
-  .btn-book {
-    font-size: .72rem; padding: 4px 12px; font-family: inherit;
-    border: 1px solid var(--border); border-radius: var(--radius);
-    background: transparent; color: var(--text); cursor: pointer; transition: background .12s;
-  }
-  .btn-book:hover { background: var(--bg); }
-
-  .state-box {
-    text-align: center; padding: 2.5rem 1rem; font-size: .8rem; color: var(--muted);
-    border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface);
-  }
-  .state-box .big { font-size: 2rem; margin-bottom: .5rem; opacity: .4; }
-  .spinner {
-    width: 20px; height: 20px; border: 2px solid var(--border);
-    border-top-color: var(--text); border-radius: 50%;
-    animation: spin .65s linear infinite; margin: 0 auto .5rem;
-  }
+  /* Status boxes */
+  .state-box { text-align: center; padding: 2.5rem 1rem; font-size: .8rem; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+  .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--text); border-radius: 50%; animation: spin .65s linear infinite; margin: 0 auto .5rem; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  .err-banner { background: var(--red-bg); color: var(--red-text); font-size: .78rem; padding: 9px 12px; border-radius: var(--radius); margin-bottom: .75rem; }
 
-  .err { background: var(--red-bg); color: var(--red-text); font-size: .78rem; padding: 9px 12px; border-radius: var(--radius); margin-bottom: .75rem; }
-  .insight { background: var(--amber-bg); color: var(--amber-text); font-size: .72rem; padding: 5px 10px; border-radius: 4px; margin-top: 5px; }
+  /* Results table */
+  .results-meta { font-size: .72rem; color: var(--muted); margin-bottom: .75rem; }
+  .results-meta strong { color: var(--text); }
+  table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+  thead th { text-align: left; font-size: .65rem; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; color: var(--hint); padding: 0 10px 8px; border-bottom: 1px solid var(--border); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg); }
+  tbody td { padding: 10px; vertical-align: middle; }
+  .best-badge { display: inline-block; background: var(--green-bg); color: var(--green-text); border: 1px solid var(--green-border); border-radius: 10px; padding: 1px 8px; font-size: .65rem; font-weight: 600; margin-left: 5px; }
+  .btn-book { display: inline-block; padding: 3px 10px; font-size: .72rem; font-family: inherit; font-weight: 600; background: var(--accent); color: var(--accent-fg); border-radius: var(--radius); text-decoration: none; white-space: nowrap; transition: opacity .15s; }
+  .btn-book:hover { opacity: .8; }
+  .price-cell { font-weight: 700; font-size: .9rem; white-space: nowrap; }
+  .route-cell { font-weight: 600; }
+  .sub { font-size: .68rem; color: var(--muted); margin-top: 2px; }
+  .stops-0 { color: var(--green-text); }
+  .stops-1 { color: var(--amber-text); }
+  .no-results { color: var(--hint); text-align: center; padding: 2rem; font-size: .8rem; }
 
   @media (max-width: 540px) {
-    .g2, .g3, .g4 { grid-template-columns: 1fr; }
-    .iata { font-size: 1rem; }
+    .g2, .g3 { grid-template-columns: 1fr; }
+    table { font-size: .72rem; }
+    thead th:nth-child(n+4), tbody td:nth-child(n+4) { display: none; }
   }
 </style>
 </head>
@@ -192,19 +108,10 @@
 
   <header>
     <h1>✈ FlightRadar</h1>
-    <p>Google Flights scraper via SerpAPI · Go backend</p>
+    <p>Google Flights scraper · Chromedp · Go backend</p>
   </header>
 
-  <!-- API Key -->
-  <div class="panel">
-    <div class="panel-title">SerpAPI Key</div>
-    <div class="field">
-      <input type="password" id="apiKey" placeholder="your SerpAPI key..."/>
-      <span class="hint">Get a free key at serpapi.com — 100 searches/month on free tier</span>
-    </div>
-  </div>
-
-  <!-- Origin & Destination -->
+  <!-- ── ROUTE ─────────────────────────────────────────────────── -->
   <div class="panel">
     <div class="panel-title">Route</div>
     <div class="grid g2">
@@ -212,34 +119,41 @@
         <label>Origin</label>
         <div class="ac-wrap">
           <input type="text" id="origin" placeholder="City or IATA code..." value="POA"
-            autocomplete="off" oninput="acInput('origin')" onkeydown="acKey(event,'origin')" onfocus="acInput('origin')" onblur="acBlur('origin')"/>
+            autocomplete="off"
+            oninput="acInput('origin')"
+            onkeydown="acKey(event,'origin')"
+            onfocus="acInput('origin')"
+            onblur="acBlur('origin')"/>
           <div class="ac-dropdown" id="ac-origin"></div>
         </div>
       </div>
       <div class="field">
         <label>Destination</label>
         <div class="ac-wrap">
-          <input type="text" id="dest" placeholder="City, IATA, or leave blank for region..."
-            autocomplete="off" oninput="acInput('dest')" onkeydown="acKey(event,'dest')" onfocus="acInput('dest')" onblur="acBlur('dest')"/>
+          <input type="text" id="dest" placeholder="Airport, city, or country…"
+            autocomplete="off"
+            oninput="acInput('dest')"
+            onkeydown="acKey(event,'dest')"
+            onfocus="acInput('dest')"
+            onblur="acBlur('dest')"/>
           <div class="ac-dropdown" id="ac-dest"></div>
         </div>
+        <div id="destSummary" class="hint" style="display:none;"></div>
       </div>
     </div>
 
-    <div id="regionBox" style="margin-top: .85rem;">
-      <div class="panel-title" style="margin-bottom:.5rem;">Quick regions</div>
-      <div class="region-tags" id="regionTags"></div>
-      <div class="selected-airports" id="selectedAirportsList"></div>
-    </div>
+    <div class="divider">OR SELECT DESTINATIONS ON THE MAP (MAX 5)</div>
+    <div id="map"></div>
+    <div id="mapDisplay" style="margin-top:10px; font-size:.8rem; color:var(--muted);">No countries selected.</div>
   </div>
 
-  <!-- Search mode -->
+  <!-- ── DATES ─────────────────────────────────────────────────── -->
   <div class="panel">
     <div class="panel-title">Date mode</div>
     <div class="tabs">
       <button class="tab active" onclick="setMode('specific')">Specific dates</button>
-      <button class="tab" onclick="setMode('range')">Date range</button>
-      <button class="tab" onclick="setMode('month')">By month</button>
+      <button class="tab"        onclick="setMode('range')">Date range</button>
+      <button class="tab"        onclick="setMode('month')">By month</button>
     </div>
 
     <div id="mode-specific">
@@ -262,7 +176,7 @@
       </div>
       <div class="grid g2" style="margin-top:.75rem;">
         <div class="field">
-          <label>Max search combos</label>
+          <label>Max combos</label>
           <select id="maxCombos">
             <option value="4">4 — quick</option>
             <option value="8" selected>8 — balanced</option>
@@ -287,244 +201,312 @@
           <select id="yearRet"><option value="2026">2026</option><option value="2027" selected>2027</option></select>
         </div>
         <div class="field">
-          <label>Samples/month</label>
+          <label>Samples / month</label>
           <select id="samplesPerMonth"><option value="2">2</option><option value="4" selected>4</option><option value="8">8</option></select>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Options -->
+  <!-- ── OPTIONS ───────────────────────────────────────────────── -->
   <div class="panel">
     <div class="panel-title">Options</div>
     <div class="grid g3">
       <div class="field">
         <label>Passengers</label>
         <select id="adults">
-          <option value="1">1 adult</option><option value="2" selected>2 adults</option>
-          <option value="3">3 adults</option><option value="4">4 adults</option>
+          <option value="1" selected>1 adult</option>
+          <option value="2">2 adults</option>
         </select>
       </div>
       <div class="field">
         <label>Cabin class</label>
         <select id="travelClass">
-          <option value="1" selected>Economy</option><option value="2">Premium economy</option>
-          <option value="3">Business</option><option value="4">First class</option>
+          <option value="1" selected>Economy</option>
+          <option value="2">Premium Economy</option>
+          <option value="3">Business</option>
         </select>
       </div>
       <div class="field">
         <label>Currency</label>
         <select id="currency">
-          <option value="BRL" selected>BRL (R$)</option><option value="USD">USD ($)</option>
-          <option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option>
+          <option value="BRL" selected>BRL (R$)</option>
+          <option value="USD">USD ($)</option>
+          <option value="EUR">EUR (€)</option>
         </select>
       </div>
     </div>
     <button class="btn-search" id="searchBtn" onclick="doSearch()">Search flights →</button>
   </div>
 
+  <!-- ── RESULTS ───────────────────────────────────────────────── -->
   <div id="results"></div>
-</div>
 
+</div><!-- /.layout -->
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const SYM = {BRL:'R$', USD:'$', EUR:'€', GBP:'£'};
-
-// ── Airport database ──
+// ─────────────────────────────────────────────────────────────────
+// Airport & Region data — single source of truth
+//
+// AIRPORTS is the only place airport data lives. Everything else
+// (autocomplete, map country→IATA lookup) is derived from it at runtime.
+//
+// To add an airport: add one entry here.
+// ─────────────────────────────────────────────────────────────────
 const AIRPORTS = [
   // Brazil
-  {iata:'GRU',name:'São Paulo–Guarulhos',city:'São Paulo',country:'Brazil'},
-  {iata:'CGH',name:'Congonhas',city:'São Paulo',country:'Brazil'},
-  {iata:'VCP',name:'Viracopos',city:'Campinas',country:'Brazil'},
-  {iata:'GIG',name:'Galeão',city:'Rio de Janeiro',country:'Brazil'},
-  {iata:'SDU',name:'Santos Dumont',city:'Rio de Janeiro',country:'Brazil'},
-  {iata:'POA',name:'Salgado Filho',city:'Porto Alegre',country:'Brazil'},
-  {iata:'BSB',name:'Brasília Intl',city:'Brasília',country:'Brazil'},
-  {iata:'SSA',name:'Luís Eduardo Magalhães',city:'Salvador',country:'Brazil'},
-  {iata:'FOR',name:'Pinto Martins',city:'Fortaleza',country:'Brazil'},
-  {iata:'REC',name:'Guararapes',city:'Recife',country:'Brazil'},
-  {iata:'MAO',name:'Eduardo Gomes',city:'Manaus',country:'Brazil'},
-  {iata:'CWB',name:'Afonso Pena',city:'Curitiba',country:'Brazil'},
-  {iata:'BEL',name:'Val de Cans',city:'Belém',country:'Brazil'},
-  {iata:'FLN',name:'Hercílio Luz',city:'Florianópolis',country:'Brazil'},
-  {iata:'NAT',name:'Governador Aluízio Alves',city:'Natal',country:'Brazil'},
+  {iata:'GRU', name:'Guarulhos Intl',        city:'São Paulo',      country:'Brazil'},
+  {iata:'CGH', name:'Congonhas',              city:'São Paulo',      country:'Brazil'},
+  {iata:'GIG', name:'Galeão Intl',            city:'Rio de Janeiro', country:'Brazil'},
+  {iata:'POA', name:'Salgado Filho',          city:'Porto Alegre',   country:'Brazil'},
+  {iata:'BSB', name:'Brasília Intl',          city:'Brasília',       country:'Brazil'},
+  {iata:'SSA', name:'Deputado Luís Eduardo',  city:'Salvador',       country:'Brazil'},
+  {iata:'REC', name:'Guararapes Intl',        city:'Recife',         country:'Brazil'},
+  {iata:'FOR', name:'Pinto Martins',          city:'Fortaleza',      country:'Brazil'},
   // Europe
-  {iata:'CDG',name:'Charles de Gaulle',city:'Paris',country:'France'},
-  {iata:'ORY',name:'Orly',city:'Paris',country:'France'},
-  {iata:'LHR',name:'Heathrow',city:'London',country:'UK'},
-  {iata:'LGW',name:'Gatwick',city:'London',country:'UK'},
-  {iata:'STN',name:'Stansted',city:'London',country:'UK'},
-  {iata:'AMS',name:'Schiphol',city:'Amsterdam',country:'Netherlands'},
-  {iata:'FRA',name:'Frankfurt',city:'Frankfurt',country:'Germany'},
-  {iata:'MUC',name:'Munich',city:'Munich',country:'Germany'},
-  {iata:'BER',name:'Brandenburg',city:'Berlin',country:'Germany'},
-  {iata:'MAD',name:'Barajas',city:'Madrid',country:'Spain'},
-  {iata:'BCN',name:'El Prat',city:'Barcelona',country:'Spain'},
-  {iata:'FCO',name:'Fiumicino',city:'Rome',country:'Italy'},
-  {iata:'MXP',name:'Malpensa',city:'Milan',country:'Italy'},
-  {iata:'LIS',name:'Humberto Delgado',city:'Lisbon',country:'Portugal'},
-  {iata:'OPO',name:'Francisco de Sá Carneiro',city:'Porto',country:'Portugal'},
-  {iata:'VIE',name:'Vienna Intl',city:'Vienna',country:'Austria'},
-  {iata:'ZRH',name:'Zurich',city:'Zurich',country:'Switzerland'},
-  {iata:'ATH',name:'Eleftherios Venizelos',city:'Athens',country:'Greece'},
-  {iata:'PRG',name:'Václav Havel',city:'Prague',country:'Czech Republic'},
-  {iata:'WAW',name:'Chopin',city:'Warsaw',country:'Poland'},
-  {iata:'BUD',name:'Ferenc Liszt',city:'Budapest',country:'Hungary'},
-  {iata:'CPH',name:'Kastrup',city:'Copenhagen',country:'Denmark'},
-  {iata:'ARN',name:'Arlanda',city:'Stockholm',country:'Sweden'},
-  {iata:'OSL',name:'Gardermoen',city:'Oslo',country:'Norway'},
-  {iata:'HEL',name:'Helsinki-Vantaa',city:'Helsinki',country:'Finland'},
-  {iata:'DUB',name:'Dublin',city:'Dublin',country:'Ireland'},
-  {iata:'BRU',name:'Brussels',city:'Brussels',country:'Belgium'},
+  {iata:'CDG', name:'Charles de Gaulle',      city:'Paris',          country:'France'},
+  {iata:'ORY', name:'Orly',                   city:'Paris',          country:'France'},
+  {iata:'LHR', name:'Heathrow',               city:'London',         country:'UK'},
+  {iata:'LGW', name:'Gatwick',                city:'London',         country:'UK'},
+  {iata:'FRA', name:'Frankfurt Intl',         city:'Frankfurt',      country:'Germany'},
+  {iata:'MUC', name:'Munich Intl',            city:'Munich',         country:'Germany'},
+  {iata:'MAD', name:'Barajas',                city:'Madrid',         country:'Spain'},
+  {iata:'BCN', name:'El Prat',                city:'Barcelona',      country:'Spain'},
+  {iata:'LIS', name:'Humberto Delgado',       city:'Lisbon',         country:'Portugal'},
+  {iata:'FCO', name:'Fiumicino',              city:'Rome',           country:'Italy'},
+  {iata:'MXP', name:'Malpensa',               city:'Milan',          country:'Italy'},
+  {iata:'AMS', name:'Schiphol',               city:'Amsterdam',      country:'Netherlands'},
+  {iata:'ATH', name:'Eleftherios Venizelos',  city:'Athens',         country:'Greece'},
+  {iata:'IST', name:'Istanbul Intl',          city:'Istanbul',       country:'Turkey'},
   // Balkans
-  {iata:'DBV',name:'Dubrovnik',city:'Dubrovnik',country:'Croatia'},
-  {iata:'SPU',name:'Split',city:'Split',country:'Croatia'},
-  {iata:'ZAG',name:'Zagreb',city:'Zagreb',country:'Croatia'},
-  {iata:'BEG',name:'Nikola Tesla',city:'Belgrade',country:'Serbia'},
-  {iata:'SKP',name:'Alexander the Great',city:'Skopje',country:'North Macedonia'},
-  {iata:'TGD',name:'Podgorica',city:'Podgorica',country:'Montenegro'},
-  {iata:'TIA',name:'Mother Teresa',city:'Tirana',country:'Albania'},
-  {iata:'SOF',name:'Sofia',city:'Sofia',country:'Bulgaria'},
-  {iata:'OHD',name:'Ohrid',city:'Ohrid',country:'North Macedonia'},
-  {iata:'INI',name:'Niš',city:'Niš',country:'Serbia'},
-  {iata:'SJJ',name:'Sarajevo',city:'Sarajevo',country:'Bosnia'},
+  {iata:'DBV', name:'Dubrovnik',              city:'Dubrovnik',      country:'Croatia'},
+  {iata:'SPU', name:'Split',                  city:'Split',          country:'Croatia'},
+  {iata:'ZAG', name:'Zagreb',                 city:'Zagreb',         country:'Croatia'},
+  {iata:'BEG', name:'Nikola Tesla',           city:'Belgrade',       country:'Serbia'},
+  {iata:'TGD', name:'Podgorica',              city:'Podgorica',      country:'Montenegro'},
+  {iata:'TIA', name:'Rinas Mother Teresa',    city:'Tirana',         country:'Albania'},
+  {iata:'SOF', name:'Sofia',                  city:'Sofia',          country:'Bulgaria'},
+  {iata:'SKP', name:'Skopje',                 city:'Skopje',         country:'North Macedonia'},
+  {iata:'SJJ', name:'Sarajevo Intl',          city:'Sarajevo',       country:'Bosnia and Herzegovina'},
   // Americas
-  {iata:'JFK',name:'John F. Kennedy',city:'New York',country:'USA'},
-  {iata:'EWR',name:'Newark',city:'New York',country:'USA'},
-  {iata:'LAX',name:'Los Angeles Intl',city:'Los Angeles',country:'USA'},
-  {iata:'MIA',name:'Miami Intl',city:'Miami',country:'USA'},
-  {iata:'ORD',name:"O'Hare",city:'Chicago',country:'USA'},
-  {iata:'YYZ',name:'Pearson',city:'Toronto',country:'Canada'},
-  {iata:'YUL',name:'Trudeau',city:'Montreal',country:'Canada'},
-  {iata:'MEX',name:'Benito Juárez',city:'Mexico City',country:'Mexico'},
-  {iata:'CUN',name:'Cancún',city:'Cancún',country:'Mexico'},
-  {iata:'BOG',name:'El Dorado',city:'Bogotá',country:'Colombia'},
-  {iata:'SCL',name:'Arturo Merino Benítez',city:'Santiago',country:'Chile'},
-  {iata:'EZE',name:'Ezeiza',city:'Buenos Aires',country:'Argentina'},
-  {iata:'LIM',name:'Jorge Chávez',city:'Lima',country:'Peru'},
-  // Asia
-  {iata:'DXB',name:'Dubai Intl',city:'Dubai',country:'UAE'},
-  {iata:'DOH',name:'Hamad Intl',city:'Doha',country:'Qatar'},
-  {iata:'IST',name:'Istanbul',city:'Istanbul',country:'Turkey'},
-  {iata:'NRT',name:'Narita',city:'Tokyo',country:'Japan'},
-  {iata:'HND',name:'Haneda',city:'Tokyo',country:'Japan'},
-  {iata:'ICN',name:'Incheon',city:'Seoul',country:'South Korea'},
-  {iata:'SIN',name:'Changi',city:'Singapore',country:'Singapore'},
-  {iata:'BKK',name:'Suvarnabhumi',city:'Bangkok',country:'Thailand'},
-  {iata:'KUL',name:'KLIA',city:'Kuala Lumpur',country:'Malaysia'},
-  {iata:'HAN',name:'Noi Bai',city:'Hanoi',country:'Vietnam'},
-  {iata:'SGN',name:'Tan Son Nhat',city:'Ho Chi Minh City',country:'Vietnam'},
-  {iata:'DPS',name:'Ngurah Rai',city:'Bali',country:'Indonesia'},
-  // Africa
-  {iata:'JNB',name:'O.R. Tambo',city:'Johannesburg',country:'South Africa'},
-  {iata:'CPT',name:'Cape Town Intl',city:'Cape Town',country:'South Africa'},
-  {iata:'NBO',name:'Jomo Kenyatta',city:'Nairobi',country:'Kenya'},
-  {iata:'CMN',name:'Mohammed V',city:'Casablanca',country:'Morocco'},
-  {iata:'CAI',name:'Cairo Intl',city:'Cairo',country:'Egypt'},
+  {iata:'JFK', name:'John F. Kennedy',        city:'New York',       country:'USA'},
+  {iata:'MIA', name:'Miami Intl',             city:'Miami',          country:'USA'},
+  {iata:'LAX', name:'Los Angeles Intl',       city:'Los Angeles',    country:'USA'},
+  {iata:'ORD', name:"O'Hare Intl",            city:'Chicago',        country:'USA'},
+  {iata:'YYZ', name:'Pearson Intl',           city:'Toronto',        country:'Canada'},
+  {iata:'EZE', name:'Ezeiza',                 city:'Buenos Aires',   country:'Argentina'},
+  {iata:'SCL', name:'Arturo Merino',          city:'Santiago',       country:'Chile'},
+  {iata:'CUN', name:'Cancún Intl',            city:'Cancún',         country:'Mexico'},
+  {iata:'PTY', name:'Tocumen Intl',           city:'Panama City',    country:'Panama'},
+  // Middle East & Africa
+  {iata:'DXB', name:'Dubai Intl',             city:'Dubai',          country:'UAE'},
+  {iata:'DOH', name:'Hamad Intl',             city:'Doha',           country:'Qatar'},
+  {iata:'CPT', name:'Cape Town Intl',         city:'Cape Town',      country:'South Africa'},
+  {iata:'JNB', name:'O.R. Tambo Intl',        city:'Johannesburg',   country:'South Africa'},
+  {iata:'NBO', name:'Jomo Kenyatta Intl',     city:'Nairobi',        country:'Kenya'},
+  // Asia & Pacific
+  {iata:'NRT', name:'Narita Intl',            city:'Tokyo',          country:'Japan'},
+  {iata:'HND', name:'Haneda',                 city:'Tokyo',          country:'Japan'},
+  {iata:'KIX', name:'Kansai Intl',            city:'Osaka',          country:'Japan'},
+  {iata:'ICN', name:'Incheon Intl',           city:'Seoul',          country:'South Korea'},
+  {iata:'BKK', name:'Suvarnabhumi',           city:'Bangkok',        country:'Thailand'},
+  {iata:'SIN', name:'Changi',                 city:'Singapore',      country:'Singapore'},
+  {iata:'KUL', name:'Kuala Lumpur Intl',      city:'Kuala Lumpur',   country:'Malaysia'},
+  {iata:'DPS', name:'Ngurah Rai Intl',        city:'Bali',           country:'Indonesia'},
 ];
 
-// ── Autocomplete state ──
-const acState = {
-  origin: { query:'', focusIdx:-1 },
-  dest:   { query:'', focusIdx:-1 },
+// countryToAirports is derived from AIRPORTS — maps GeoJSON country names to IATA codes.
+// Supplemented at runtime by the Algolia dataset for countries not in AIRPORTS.
+const COUNTRY_NAME_ALIASES = {
+  'United States of America': 'United States',
+  'Russian Federation':       'Russia',
+  'Republic of Korea':        'South Korea',
+  'Czechia':                  'Czech Republic',
+  'Bosnia and Herz.':         'Bosnia and Herzegovina',
 };
 
-let regions = {};
-let selectedRegion = null;
-let mode = 'specific';
-let outMonthsSel = new Set();
-let retMonthsSel = new Set();
+// Build the initial country→airports map from our curated AIRPORTS list.
+const countryToAirports = AIRPORTS.reduce((acc, a) => {
+  const key = a.country;
+  if (!acc[key]) acc[key] = [];
+  acc[key].push(a.iata);
+  return acc;
+}, {});
 
-// Init
-(async () => {
+// ─────────────────────────────────────────────────────────────────
+// App state
+// ─────────────────────────────────────────────────────────────────
+const MONTHS        = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const CURRENCY_SYM  = { BRL: 'R$', USD: '$', EUR: '€' };
+
+const acState = {
+  origin: { focusIdx: -1, items: [] },
+  dest:   { focusIdx: -1, items: [] },
+};
+
+let mode            = 'specific';
+const outMonthsSel  = new Set();
+const retMonthsSel  = new Set();
+// Single source of truth for all selected countries — written by both the
+// autocomplete and the map, read by doSearch and renderMapDisplay.
+const selectedCountries = new Set();
+// Index of GeoJSON layers by country name so we can highlight/unhighlight
+// them programmatically when the user picks a country via autocomplete.
+const layersByCountry = {};
+let geojsonLayer;
+
+function normalizeCountry(name) {
+  return COUNTRY_NAME_ALIASES[name] || name;
+}
+
+// allAirports starts as a copy of the curated list and is extended with the
+// full Algolia dataset on page load. searchAirports() reads from this array,
+// so autocomplete gains global coverage without any per-keystroke network calls.
+const allAirports = [...AIRPORTS];
+
+// loadGlobalAirports fetches Algolia's public airport dataset once, merges new
+// entries into allAirports (for autocomplete) and countryToAirports (for the map).
+// Curated entries in AIRPORTS are never overwritten or duplicated.
+// Failures are non-fatal — the app works fine with the built-in data only.
+async function loadGlobalAirports() {
   try {
-    const r = await fetch('/api/regions');
-    regions = await r.json();
-    buildRegionTags();
-  } catch(e) { console.warn('Could not load regions', e); }
-  buildMonthChips();
-  const today = new Date();
-  const fmt = d => d.toISOString().slice(0,10);
-  const add = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
-  document.getElementById('outDate').value = fmt(add(today, 30));
-  document.getElementById('retDate').value = fmt(add(today, 37));
-  document.getElementById('outFrom').value = fmt(add(today, 25));
-  document.getElementById('outTo').value   = fmt(add(today, 60));
-  document.getElementById('retFrom').value = fmt(add(today, 32));
-  document.getElementById('retTo').value   = fmt(add(today, 74));
-  // show origin autocomplete hint on load
-  document.getElementById('origin').value = 'POA';
-})();
+    const res  = await fetch('https://raw.githubusercontent.com/algolia/datasets/master/airports/airports.json');
+    const data = await res.json();
 
-// ── Autocomplete logic ──
+    // Build a set of IATA codes already in the curated list for O(1) dedup.
+    const curatedIATAs = new Set(AIRPORTS.map(a => a.iata));
+
+    for (const apt of data) {
+      const iata    = apt.iata_code;
+      const country = apt.country;
+      const city    = apt.city || apt.name || '';
+      const name    = apt.name || '';
+
+      if (!iata || !country || iata === '\\N') continue;
+
+      // Extend autocomplete with every valid airport not already in the curated list.
+      if (!curatedIATAs.has(iata)) {
+        allAirports.push({ iata, name, city, country });
+        curatedIATAs.add(iata); // prevent duplicates within the Algolia set itself
+      }
+
+      // Also fill countryToAirports for map click support (cap at 5 per country).
+      if (!countryToAirports[country]) countryToAirports[country] = [];
+      if (!countryToAirports[country].includes(iata) && countryToAirports[country].length < 5) {
+        countryToAirports[country].push(iata);
+      }
+    }
+
+    console.log(`[airports] loaded ${allAirports.length} airports total`);
+  } catch (e) {
+    console.warn('[airports] global fetch failed — using curated data only', e);
+  }
+}
+
+const map = L.map('map').setView([20, 0], 2);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 6, attribution: '© OpenStreetMap',
+}).addTo(map);
+
+
+function renderMapDisplay() {
+  const el = document.getElementById('mapDisplay');
+  if (!selectedCountries.size) { el.textContent = 'No countries selected.'; return; }
+  el.innerHTML = Array.from(selectedCountries)
+    .map(c => `<span class="map-badge">${c} (${(countryToAirports[c] || []).join(', ')})</span>`)
+    .join('');
+}
+
+// Repaints every known GeoJSON layer to match the current selectedCountries set.
+// Called after any change to selectedCountries so the map always stays in sync.
+function syncMapHighlights() {
+  Object.entries(layersByCountry).forEach(([name, layer]) => {
+    layer.setStyle({ fillColor: selectedCountries.has(name) ? '#1a1a18' : '#e2e2e0' });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Autocomplete
+// ─────────────────────────────────────────────────────────────────
 function searchAirports(q) {
-  if (!q || q.length < 1) return [];
+  if (!q) return [];
   const u = q.toUpperCase().trim();
-  const results = [];
-  // exact IATA first
-  const exact = AIRPORTS.filter(a => a.iata.startsWith(u));
-  exact.forEach(a => results.push(a));
-  // city/name match
-  const loose = AIRPORTS.filter(a =>
+  // Curated entries (AIRPORTS) naturally appear first in allAirports,
+  // so exact IATA matches on well-known airports bubble to the top.
+  const exact = allAirports.filter(a => a.iata.startsWith(u));
+  const loose = allAirports.filter(a =>
     !a.iata.startsWith(u) &&
     (a.city.toUpperCase().includes(u) || a.name.toUpperCase().includes(u) || a.country.toUpperCase().includes(u))
   );
-  loose.forEach(a => results.push(a));
-  return results.slice(0, 8);
+  return [...exact, ...loose].slice(0, 10);
 }
 
-function searchRegions(q) {
-  if (!q || q.length < 1) return [];
-  const u = q.toLowerCase();
-  return Object.keys(regions).filter(r => r.toLowerCase().includes(u));
+// searchCountries returns country names from countryToAirports whose name
+// matches the query — used to offer "select all airports in X" as one click.
+function searchCountries(q) {
+  if (!q || q.length < 2) return [];
+  const u = q.toUpperCase().trim();
+  return Object.keys(countryToAirports)
+    .filter(c => c.toUpperCase().includes(u) && countryToAirports[c].length > 0)
+    .slice(0, 4);
 }
 
 function acInput(field) {
-  const input = document.getElementById(field);
+  const input    = document.getElementById(field);
   const dropdown = document.getElementById('ac-' + field);
-  const q = input.value.trim();
-  acState[field].query = q;
-  acState[field].focusIdx = -1;
+  const q        = input.value.trim();
 
-  if (field === 'dest') {
-    // show/hide region box
-    const regionBox = document.getElementById('regionBox');
-    regionBox.style.display = q.length === 0 ? '' : 'none';
-    if (q.length === 0) { selectedRegion = null; document.querySelectorAll('.region-tag').forEach(b=>b.classList.remove('sel')); }
-  }
-
-  if (q.length === 0) { dropdown.classList.remove('open'); return; }
-
-  const airports = searchAirports(q);
-  const matchedRegions = field === 'dest' ? searchRegions(q) : [];
-
-  if (airports.length === 0 && matchedRegions.length === 0) {
+  if (field === 'dest' && q.length === 0) {
     dropdown.classList.remove('open');
+    acState[field].items = [];
     return;
   }
 
-  let html = '';
-
-  if (matchedRegions.length > 0) {
-    html += `<div class="ac-section">Regions</div>`;
-    matchedRegions.forEach(r => {
-      const airports_list = (regions[r] || []).slice(0,4).join(', ');
-      html += `<div class="ac-item" data-type="region" data-value="${esc(r)}" onmousedown="acSelectRegion('${esc(r)}')">
-        <span class="ac-iata">🌍</span>
-        <span class="ac-name">${esc(r)}</span>
-        <span class="ac-country">${esc(airports_list)}</span>
-      </div>`;
-    });
+  if (field === 'dest' && selectedCountries.size > 0) {
+    // User started typing after countries were selected — clear them all.
+    selectedCountries.clear();
+    syncMapHighlights();
+    renderMapDisplay();
+    document.getElementById('destSummary').style.display = 'none';
   }
 
-  if (airports.length > 0) {
-    if (matchedRegions.length > 0) html += `<div class="ac-section">Airports</div>`;
+  if (!q) { dropdown.classList.remove('open'); acState[field].items = []; return; }
+
+  const airports         = searchAirports(q);
+  const matchedCountries = field === 'dest' ? searchCountries(q) : [];
+
+  if (!airports.length && !matchedCountries.length) {
+    dropdown.classList.remove('open');
+    acState[field].items = [];
+    return;
+  }
+
+  const items = [
+    ...matchedCountries.map(c => ({ type: 'country', value: c })),
+    ...airports.map(a         => ({ type: 'airport', value: a.iata })),
+  ];
+  acState[field].items    = items;
+  acState[field].focusIdx = -1;
+
+  let html = '';
+  if (matchedCountries.length) {
+    html += `<div class="ac-section">Countries — all airports</div>`;
+    matchedCountries.forEach(c => {
+      const codes = (countryToAirports[c] || []).join(', ');
+      html += `<div class="ac-item" data-field="${field}" data-type="country" data-value="${esc(c)}" onmousedown="acSelect(event)">
+        <span class="ac-iata">🗺</span>
+        <span class="ac-name">${esc(c)}</span>
+        <span class="ac-country">${esc(codes)}</span></div>`;
+    });
+  }
+  if (airports.length) {
+    html += `<div class="ac-section">Airports</div>`;
     airports.forEach(a => {
-      html += `<div class="ac-item" data-type="airport" data-iata="${a.iata}" onmousedown="acSelect('${field}','${a.iata}','${esc(a.city)} (${a.iata})')">
+      html += `<div class="ac-item" data-field="${field}" data-type="airport" data-value="${a.iata}" onmousedown="acSelect(event)">
         <span class="ac-iata">${a.iata}</span>
         <span class="ac-name">${esc(a.city)} — ${esc(a.name)}</span>
-        <span class="ac-country">${esc(a.country)}</span>
-      </div>`;
+        <span class="ac-country">${esc(a.country)}</span></div>`;
     });
   }
 
@@ -532,143 +514,241 @@ function acInput(field) {
   dropdown.classList.add('open');
 }
 
-function acSelect(field, iata, label) {
-  const input = document.getElementById(field);
-  input.value = iata;
-  document.getElementById('ac-' + field).classList.remove('open');
-  acState[field].focusIdx = -1;
-  if (field === 'dest') {
-    selectedRegion = null;
-    document.getElementById('regionBox').style.display = 'none';
-    document.querySelectorAll('.region-tag').forEach(b=>b.classList.remove('sel'));
+function acSelect(e) {
+  e.preventDefault();
+  const { field, type, value } = e.currentTarget.dataset;
+  if (type === 'country') {
+    document.getElementById('ac-' + field).classList.remove('open');
+    acSelectCountry(value);
+  } else {
+    document.getElementById(field).value = value;
+    document.getElementById('ac-' + field).classList.remove('open');
+    if (field === 'dest') {
+      // Single airport picked — clear any country selection.
+      selectedCountries.clear();
+      syncMapHighlights();
+      renderMapDisplay();
+      document.getElementById('destSummary').style.display = 'none';
+    }
   }
 }
 
-function acSelectRegion(name) {
-  selectedRegion = name;
-  document.getElementById('dest').value = '';
-  document.getElementById('ac-dest').classList.remove('open');
-  document.getElementById('regionBox').style.display = '';
-  document.querySelectorAll('.region-tag').forEach(b => {
-    b.classList.toggle('sel', b.textContent === name);
-  });
-  const airports = regions[name] || [];
-  document.getElementById('selectedAirportsList').textContent = '→ ' + airports.join(', ');
+// acSelectCountry adds a country to the shared selection set and syncs both
+// the map highlight and the dest input/summary.
+function acSelectCountry(country) {
+  if (!countryToAirports[country]?.length) return;
+  if (!selectedCountries.has(country)) {
+    if (selectedCountries.size >= 5) { alert('Maximum 5 countries.'); return; }
+    selectedCountries.add(country);
+  }
+  syncMapHighlights();
+  renderMapDisplay();
+  syncDestInput();
+}
+
+// syncDestInput reflects the current selectedCountries into the dest field.
+// - 0 selected → clear field and summary
+// - 1 selected → show country name + airport codes as hint
+// - 2+ selected → show count label; detailed list is in the map display below
+function syncDestInput() {
+  const input   = document.getElementById('dest');
+  const summary = document.getElementById('destSummary');
+  const count   = selectedCountries.size;
+
+  if (count === 0) {
+    input.value          = '';
+    summary.textContent  = '';
+    summary.style.display = 'none';
+    return;
+  }
+
+  if (count === 1) {
+    const country        = [...selectedCountries][0];
+    const codes          = (countryToAirports[country] || []).join(', ');
+    input.value          = country;
+    summary.textContent  = `→ ${codes}`;
+    summary.style.display = '';
+  } else {
+    input.value          = `${count} countries selected`;
+    summary.textContent  = Array.from(selectedCountries).join(', ');
+    summary.style.display = '';
+  }
 }
 
 function acBlur(field) {
-  // small delay so onmousedown fires first
-  setTimeout(() => {
-    document.getElementById('ac-' + field).classList.remove('open');
-  }, 150);
+  setTimeout(() => document.getElementById('ac-' + field).classList.remove('open'), 150);
 }
 
 function acKey(e, field) {
   const dropdown = document.getElementById('ac-' + field);
   if (!dropdown.classList.contains('open')) return;
+
   const items = dropdown.querySelectorAll('.ac-item');
-  let idx = acState[field].focusIdx;
+  const state = acState[field];
 
   if (e.key === 'ArrowDown') {
     e.preventDefault();
-    idx = Math.min(idx + 1, items.length - 1);
+    state.focusIdx = Math.min(state.focusIdx + 1, items.length - 1);
+    items.forEach((el, i) => el.classList.toggle('focused', i === state.focusIdx));
   } else if (e.key === 'ArrowUp') {
     e.preventDefault();
-    idx = Math.max(idx - 1, -1);
-  } else if (e.key === 'Enter' && idx >= 0) {
+    state.focusIdx = Math.max(state.focusIdx - 1, 0);
+    items.forEach((el, i) => el.classList.toggle('focused', i === state.focusIdx));
+  } else if (e.key === 'Enter') {
     e.preventDefault();
-    items[idx].dispatchEvent(new MouseEvent('mousedown'));
-    return;
+    if (state.focusIdx >= 0 && items[state.focusIdx]) {
+      items[state.focusIdx].dispatchEvent(new MouseEvent('mousedown'));
+    }
   } else if (e.key === 'Escape') {
     dropdown.classList.remove('open');
-    return;
-  } else { return; }
-
-  items.forEach((item, i) => item.classList.toggle('focused', i === idx));
-  acState[field].focusIdx = idx;
-}
-
-// ── Regions ──
-function buildRegionTags() {
-  const container = document.getElementById('regionTags');
-  container.innerHTML = '';
-  Object.keys(regions).forEach(name => {
-    const btn = document.createElement('button');
-    btn.className = 'region-tag';
-    btn.textContent = name;
-    btn.onclick = () => toggleRegion(name, btn);
-    container.appendChild(btn);
-  });
-}
-
-function toggleRegion(name, btn) {
-  document.querySelectorAll('.region-tag').forEach(b=>b.classList.remove('sel'));
-  if (selectedRegion === name) {
-    selectedRegion = null;
-    document.getElementById('selectedAirportsList').textContent = '';
-    return;
   }
-  selectedRegion = name;
-  btn.classList.add('sel');
-  const airports = regions[name] || [];
-  document.getElementById('selectedAirportsList').textContent = '→ ' + airports.join(', ');
 }
 
-// ── Mode ──
+// ─────────────────────────────────────────────────────────────────
+// UI helpers
+// ─────────────────────────────────────────────────────────────────
 function setMode(m) {
   mode = m;
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['specific','range','month'][i] === m));
-  ['specific','range','month'].forEach(id => {
-    document.getElementById('mode-'+id).style.display = id === m ? '' : 'none';
-  });
+  document.querySelectorAll('.tab').forEach((t, i) =>
+    t.classList.toggle('active', ['specific','range','month'][i] === m)
+  );
+  ['specific','range','month'].forEach(id =>
+    document.getElementById('mode-' + id).style.display = id === m ? '' : 'none'
+  );
 }
 
 function buildMonthChips() {
   ['outMonthChips','retMonthChips'].forEach(id => {
-    const el = document.getElementById(id);
+    const el  = document.getElementById(id);
     const set = id === 'outMonthChips' ? outMonthsSel : retMonthsSel;
-    el.innerHTML = '';
-    MONTHS.forEach((m,i) => {
+    MONTHS.forEach((label, i) => {
       const btn = document.createElement('button');
-      btn.className = 'chip';
-      btn.textContent = m;
-      btn.onclick = () => {
-        const n = i+1;
+      btn.className   = 'chip';
+      btn.textContent = label;
+      btn.onclick     = () => {
+        const n = i + 1;
         if (set.has(n)) { set.delete(n); btn.classList.remove('sel'); }
-        else { set.add(n); btn.classList.add('sel'); }
+        else            { set.add(n);    btn.classList.add('sel');    }
       };
       el.appendChild(btn);
     });
   });
 }
 
-// ── Search ──
-async function doSearch() {
-  const apiKey = document.getElementById('apiKey').value.trim();
-  if (!apiKey) { alert('Paste your SerpAPI key first.'); return; }
+// ─────────────────────────────────────────────────────────────────
+// Results renderer
+// ─────────────────────────────────────────────────────────────────
+function renderResults(data, currency) {
+  const sym = CURRENCY_SYM[currency] || currency;
+  const el  = document.getElementById('results');
 
-  const origin = document.getElementById('origin').value.trim().toUpperCase();
-  const destRaw = document.getElementById('dest').value.trim().toUpperCase();
-
-  let destinations = [];
-  if (selectedRegion && regions[selectedRegion]) {
-    destinations = regions[selectedRegion].slice(0, 6);
-  } else if (destRaw) {
-    destinations = destRaw.split(',').map(s=>s.trim()).filter(Boolean);
-  } else {
-    alert('Enter a destination or select a region.'); return;
+  if (data.error) {
+    el.innerHTML = `<div class="err-banner">Server error: ${esc(data.error)}</div>`;
+    return;
   }
 
+  let html = `<div class="panel">
+    <div class="panel-title">Results</div>
+    <div class="results-meta">
+      <strong>${data.successful ?? 0}</strong> result(s) from
+      <strong>${data.total_jobs ?? 0}</strong> search(es)`;
+
+  if (data.no_results > 0) html += ` · ${data.no_results} returned no flights`;
+  if (data.errors?.length) {
+    html += ` · <span style="color:var(--red-text)">${data.errors.length} error(s)</span>`;
+    data.errors.forEach(e => { html += `<div class="err-banner" style="margin-top:6px;">${esc(e)}</div>`; });
+  }
+  html += `</div>`;
+
+  if (!data.results?.length) {
+    html += `<div class="no-results">No flights found. Try different dates or destinations.</div>`;
+  } else {
+    html += `<table>
+      <thead><tr>
+        <th>Route</th>
+        <th>Dates</th>
+        <th>Airline</th>
+        <th>Duration</th>
+        <th>Stops</th>
+        <th>Price</th>
+        <th></th>
+      </tr></thead>
+      <tbody>`;
+
+    data.results.forEach(r => {
+      const stopsClass = r.stops === 0 ? 'stops-0' : (r.stops === 1 ? 'stops-1' : '');
+      const stopsLabel = r.stops === 0 ? 'Nonstop' : `${r.stops} stop${r.stops > 1 ? 's' : ''}`;
+      const retLabel   = r.return_date ? ` → ${r.return_date}` : '';
+      const times      = (r.dep_time && r.arr_time) ? `<div class="sub">${esc(r.dep_time)} → ${esc(r.arr_time)}</div>` : '';
+      const price      = r.price > 0 ? sym + ' ' + r.price.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
+      const bookBtn    = r.url ? `<a class="btn-book" href="${r.url}" target="_blank" rel="noopener">Book ↗</a>` : '—';
+
+      html += `<tr>
+        <td class="route-cell">
+          ${esc(r.origin)} → ${esc(r.destination)}
+          ${r.is_best ? '<span class="best-badge">Best</span>' : ''}
+        </td>
+        <td>${esc(r.outbound_date)}${esc(retLabel)}</td>
+        <td>${esc(r.airline) || '—'}${times}</td>
+        <td>${esc(r.duration) || '—'}</td>
+        <td class="${stopsClass}">${stopsLabel}</td>
+        <td class="price-cell">${price}</td>
+        <td>${bookBtn}</td>
+      </tr>`;
+    });
+
+    html += `</tbody></table>`;
+  }
+
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Search execution
+// ─────────────────────────────────────────────────────────────────
+async function doSearch() {
+  const origin = document.getElementById('origin').value.trim().toUpperCase();
+  if (!origin) { alert('Please enter an origin airport.'); return; }
+
+  // Collect destinations: selectedCountries (shared by autocomplete + map) + manual IATA input.
+  let destinations = [];
+
+  if (selectedCountries.size > 0) {
+    const noAirports = [];
+    selectedCountries.forEach(country => {
+      const codes = countryToAirports[country] || [];
+      if (codes.length === 0) noAirports.push(country);
+      else destinations = destinations.concat(codes);
+    });
+    if (noAirports.length) {
+      alert(`No airports found for: ${noAirports.join(', ')}.\nTry selecting a different country.`);
+      if (!destinations.length) return;
+    }
+  } else if (document.getElementById('dest').value.trim()) {
+    destinations = destinations.concat(
+      document.getElementById('dest').value.trim().toUpperCase().split(',').map(s => s.trim()).filter(Boolean)
+    );
+  }
+
+  destinations = [...new Set(destinations)]; // deduplicate
+
+  if (!destinations.length) { alert('Please enter a destination or select one on the map.'); return; }
+
+  const currency = document.getElementById('currency').value;
+
   const payload = {
-    api_key: apiKey, origin, destinations, mode,
-    adults: parseInt(document.getElementById('adults').value),
+    origin,
+    destinations,
+    mode,
+    adults:       parseInt(document.getElementById('adults').value),
     travel_class: parseInt(document.getElementById('travelClass').value),
-    currency: document.getElementById('currency').value,
+    currency,
   };
 
   if (mode === 'specific') {
     payload.outbound_date = document.getElementById('outDate').value;
-    payload.return_date   = document.getElementById('retDate').value;
+    payload.return_date   = document.getElementById('retDate').value || undefined;
   } else if (mode === 'range') {
     payload.outbound_from = document.getElementById('outFrom').value;
     payload.outbound_to   = document.getElementById('outTo').value;
@@ -676,92 +756,102 @@ async function doSearch() {
     payload.return_to     = document.getElementById('retTo').value;
     payload.max_combos    = parseInt(document.getElementById('maxCombos').value);
   } else if (mode === 'month') {
-    if (!outMonthsSel.size) { alert('Pick at least one outbound month.'); return; }
-    payload.outbound_months   = [...outMonthsSel].sort((a,b)=>a-b);
-    payload.return_months     = [...retMonthsSel].sort((a,b)=>a-b);
+    payload.outbound_months   = [...outMonthsSel];
+    payload.return_months     = [...retMonthsSel];
     payload.year              = parseInt(document.getElementById('yearOut').value);
     payload.return_year       = parseInt(document.getElementById('yearRet').value);
     payload.samples_per_month = parseInt(document.getElementById('samplesPerMonth').value);
   }
 
   const btn = document.getElementById('searchBtn');
-  btn.disabled = true; btn.textContent = 'Searching...';
-  document.getElementById('results').innerHTML = `<div class="state-box"><div class="spinner"></div>Running searches against SerpAPI…</div>`;
+  btn.disabled    = true;
+  btn.textContent = 'Searching…';
+  document.getElementById('results').innerHTML = `
+    <div class="state-box">
+      <div class="spinner"></div>
+      Launching Chrome for ${destinations.length} destination(s)…
+      <div style="margin-top:6px; font-size:.7rem; color:var(--hint);">This can take up to a minute. Please wait.</div>
+    </div>`;
 
   try {
-    const r = await fetch('/api/search', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(payload),
+    const res  = await fetch('/api/search', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
     });
-    const data = await r.json();
-    if (data.error) { renderError(data.error); return; }
-    renderResults(data, payload.currency);
-  } catch(e) {
-    renderError('Network error: ' + e.message);
+    const data = await res.json();
+    renderResults(data, currency);
+  } catch (e) {
+    document.getElementById('results').innerHTML =
+      `<div class="err-banner">Network error: ${esc(e.message)}</div>`;
   } finally {
-    btn.disabled = false; btn.textContent = 'Search flights →';
+    btn.disabled    = false;
+    btn.textContent = 'Search flights →';
   }
 }
 
-function renderError(msg) {
-  document.getElementById('results').innerHTML = `<div class="err">Error: ${esc(msg)}</div>`;
+// ─────────────────────────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-function renderResults(data, currency) {
-  const sym = SYM[currency] || '';
-  const res = data.results || [];
-  const errors = data.errors || [];
-  let html = `<div class="results-bar"><span>${res.length} result${res.length!==1?'s':''} · ${data.successful}/${data.total_jobs} searches OK</span></div>`;
+(async () => {
+  buildMonthChips();
 
-  if (errors.length) {
-    html += `<div class="err">⚠ ${errors.length} search${errors.length>1?'es':''} failed:<br>${errors.slice(0,3).map(esc).join('<br>')}</div>`;
-  }
-  if (!res.length) {
-    html += `<div class="state-box"><div class="big">✈</div>No flights found. Check your dates and IATA codes.</div>`;
-    document.getElementById('results').innerHTML = html;
-    return;
-  }
+  // Seed the map with global airport data, then load country boundaries.
+  loadGlobalAirports().then(() => {
+    fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
+      .then(r => r.json())
+      .then(data => {
+        geojsonLayer = L.geoJson(data, {
+          style: { color: '#6b6b68', weight: 1, fillColor: '#e2e2e0', fillOpacity: 0.5 },
+          onEachFeature(feature, layer) {
+            const name = normalizeCountry(feature.properties.name);
+            // Index every layer by country name for programmatic highlight access.
+            layersByCountry[name] = layer;
 
-  res.forEach(f => {
-    const stops = f.stops === 0
-      ? `<span class="badge badge-nonstop">nonstop</span>`
-      : `<span class="badge badge-stop">${f.stops} stop${f.stops>1?'s':''}</span>`;
-    const dur = `${Math.floor(f.total_duration/60)}h ${f.total_duration%60}m`;
-    const retLine = f.return_date ? `<div class="price-meta">return ${f.return_date}</div>` : '';
-    const insight = f.price_level ? `<div class="insight">${f.price_level} · lowest seen ${sym}${f.lowest_seen.toLocaleString()}</div>` : '';
-    html += `<div class="flight${f.is_best?' best':''}">
-      ${f.is_best ? '<span class="badge badge-best">best price</span>' : ''}
-      <div class="flight-row">
-        <div class="flight-route">
-          <span class="iata">${esc(f.dep_iata||f.origin)}</span>
-          <span class="arrow"> → </span>
-          <span class="iata">${esc(f.arr_iata||f.destination)}</span>
-          <div style="margin-left:8px;">${stops}<div class="meta">${dur} · ${esc(f.airline)}</div></div>
-        </div>
-        <div class="price-block">
-          <div class="price">${sym}${f.price.toLocaleString()}</div>
-          <div class="price-meta">${f.outbound_date}</div>
-          ${retLine}
-        </div>
-      </div>
-      ${insight}
-      <div class="flight-footer">
-        <span>${f.dep_time ? esc(f.dep_time)+' → '+esc(f.arr_time) : ''} ${f.flight_numbers ? '· '+esc(f.flight_numbers) : ''}</span>
-        <button class="btn-book" onclick="openGF('${esc(f.origin)}','${esc(f.destination)}','${f.outbound_date}','${f.return_date||''}')">View on Google Flights ↗</button>
-      </div>
-    </div>`;
+            layer.on('click', () => {
+              if (selectedCountries.has(name)) {
+                selectedCountries.delete(name);
+                syncMapHighlights();
+                renderMapDisplay();
+                syncDestInput();
+              } else {
+                if (selectedCountries.size >= 5) {
+                  alert('Maximum 5 countries.');
+                  return;
+                }
+                // Add the country regardless — airports may still be loading.
+                // doSearch will skip countries with no airports at search time.
+                selectedCountries.add(name);
+                syncMapHighlights();
+                renderMapDisplay();
+                syncDestInput();
+              }
+            });
+
+            // Show pointer cursor on hover so countries feel clickable.
+            layer.on('mouseover', () => layer.setStyle({ fillOpacity: 0.8 }));
+            layer.on('mouseout',  () => layer.setStyle({ fillOpacity: selectedCountries.has(name) ? 0.9 : 0.5 }));
+          },
+        }).addTo(map);
+      })
+      .catch(e => console.warn('[map] GeoJSON load failed', e));
   });
 
-  document.getElementById('results').innerHTML = html;
-}
+  const fmt = d => d.toISOString().slice(0, 10);
+  const add = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const today = new Date();
 
-function openGF(from, to, out, ret) {
-  const url = `https://www.google.com/travel/flights?q=Flights+${from}+to+${to}+${out}${ret?'+returning+'+ret:''}`;
-  window.open(url, '_blank');
-}
-
-function esc(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  document.getElementById('outDate').value = fmt(add(today, 30));
+  document.getElementById('retDate').value = fmt(add(today, 37));
+  document.getElementById('outFrom').value = fmt(add(today, 25));
+  document.getElementById('outTo').value   = fmt(add(today, 60));
+  document.getElementById('retFrom').value = fmt(add(today, 32));
+  document.getElementById('retTo').value   = fmt(add(today, 74));
+})();
 </script>
 </body>
 </html>

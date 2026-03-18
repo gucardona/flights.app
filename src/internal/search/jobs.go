@@ -31,11 +31,11 @@ type SearchRequest struct {
 	MaxCombos    int    `json:"max_combos"`
 
 	// mode=month
-	OutboundMonths []int `json:"outbound_months"` // 1-12
-	ReturnMonths   []int `json:"return_months"`
-	Year           int   `json:"year"`
-	ReturnYear     int   `json:"return_year"` // if return is in next year
-	SamplesPerMonth int  `json:"samples_per_month"`
+	OutboundMonths  []int `json:"outbound_months"` // 1-12
+	ReturnMonths    []int `json:"return_months"`
+	Year            int   `json:"year"`
+	ReturnYear      int   `json:"return_year"` // if return is in next year
+	SamplesPerMonth int   `json:"samples_per_month"`
 }
 
 func (r *SearchRequest) defaults() {
@@ -57,9 +57,6 @@ func (r *SearchRequest) defaults() {
 }
 
 func (r *SearchRequest) Validate() error {
-	if r.APIKey == "" {
-		return fmt.Errorf("api_key is required")
-	}
 	if r.Origin == "" {
 		return fmt.Errorf("origin is required")
 	}
